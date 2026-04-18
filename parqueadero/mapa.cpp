@@ -40,8 +40,8 @@ void showMap(int mapa[ROW][COL], bool aval[ROW][COL]){
   const std::string EX = "\033[45;37m";
 
   for (int i = 0; i < ROW; i++) {
-    for (int j = 0; j < COLS; j++) {
-      switch (map[i][j]) {
+    for (int j = 0; j < COL; j++) {
+      switch (mapa[i][j]) {
         case WALL: std::cout << W << " ### " << R;
                    break;
         case ROAD: std::cout << RO << " via " << R;
@@ -60,6 +60,6 @@ void showMap(int mapa[ROW][COL], bool aval[ROW][COL]){
 
       }
     }
-    std::cout << "\n"
+    std::cout << "\n";
   }
 }

@@ -1,13 +1,13 @@
 #pragma once
 
-#define PARQUEADERO 1
-#define PARED 0
-#define VIA 2
-#define ENTRADA 3
-#define SALIDA 4
+#define PARKING 1
+#define WALL 0
+#define ROAD 2
+#define ENTRY 3
+#define OUT 4
 
-const int ROWS = 16;
-const int COLS = 16;
+const int ROW = 16;
+const int COL = 16;
 
-void buildMap(int mapa[ROWS][COLS]);
-void showMap(int mapa[FILAS][COLS], bool aval[][])
+void buildMap(int mapa[ROW][COL]);
+void showMap(int mapa[ROW][COL], bool aval[ROW][COL]);
