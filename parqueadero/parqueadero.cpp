@@ -57,3 +57,134 @@ double calcPay(std::time_t checkIn, std::time_t checkOut) {
   if (hours < 1.0) hours = 1.0;
   return hours * 3500.0;
 }
+
+void checkInVeh(Parking* p) {
+  if (p->tVehicles >= M_VEHICLES) { std::cout << "\n  Parqueadero lleno.\n"; return; }
+
+  int spotRow = -1, spotCol = -1;
+  if (!firstFreeSpot(p, &spotRow, &spotCol)) {
+    std::cout << "\n  No hay espacios disponibles.\n";
+    return;
+  }
+
+  std::string plate;
+  std::cout << "\n  Placa (formato AAA000): ";
+  std::cin >> plate;
+
+  if (!validPlate(plate))          { std::cout << "  Placa invalida. Ej: ABC123\n"; return; }
+  if (findByPlate(p, plate) != -1) { std::cout << "  Placa ya registrada.\n";       return; }
+
+  // idx es el indice donde guardamos el vehiculo nuevo; tVehicles se incrementa en la misma linea
+  int idx = p->tVehicles++;
+  p->vehicles[idx] = {spotRow, spotCol, std::time(nullptr), plate};
+  p->aval[spotRow][spotCol] = true;
+
+  char buf[10];
+  std::strftime(buf, sizeof(buf), "%H:%M:%S", std::localtime(&p->vehicles[idx].checkIn));
+  std::cout << "  OK - " << plate << " en [" << spotRow << "][" << spotCol << "]"
+            << "  entrada: " << buf << "\n";
+}
+
+void checkOutVeh(Parking* p) {
+  if (!p->tVehicles) { std::cout << "\n  No hay vehiculos en el parqueadero.\n"; return; }
+
+  std::string plate;
+  std::cout << "\n  Placa a retirar: ";
+  std::cin >> plate;
+
+  int idx = findByPlate(p, plate);
+  if (idx == -1) { std::cout << "  Placa no encontrada.\n"; return; }
+
+  std::time_t now = std::time(nullptr);
+  int vRow = p->vehicles[idx].row;
+  int vCol = p->vehicles[idx].col;
+  int mins = (int)(std::difftime(now, p->vehicles[idx].checkIn) / 60);
+
+  p->aval[vRow][vCol] = false;
+
+  char bufIn[10], bufOut[10];
+  std::strftime(bufIn,  sizeof(bufIn),  "%H:%M:%S", std::localtime(&p->vehicles[idx].checkIn));
+  std::strftime(bufOut, sizeof(bufOut), "%H:%M:%S", std::localtime(&now));
+
+  std::cout << "\n  Placa   : " << plate
+            << "\n  Entrada : " << bufIn
+            << "\n  Salida  : " << bufOut
+            << "\n  Tiempo  : " << mins << " min"
+            << "\n  Total   : $" << (int)calcPay(p->vehicles[idx].checkIn, now) << "\n\n";
+
+  // Eliminamos el vehiculo reemplazandolo con el ultimo del arreglo y reduciendo el contador
+  p->vehicles[idx] = p->vehicles[--p->tVehicles];
+}
+
+void showAval(Parking* p) {
+  int total = 0, free = 0;
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < COL; j++) {
+      if (p->map[i][j] == PARKING) {
+        total++;
+        if (!p->aval[i][j]) free++;
+      }
+    }
+  }
+  std::cout << "\n  Total    : " << total
+            << "\n  Libres   : " << free
+            << "\n  Ocupados : " << total - free << "\n\n";
+}
+
+void showVehicles(Parking* p) {
+  if (!p->tVehicles) { std::cout << "\n  No hay vehiculos estacionados.\n\n"; return; }
+
+  std::cout << "\n  " << std::left << std::setw(10) << "Placa"
+            << std::setw(10) << "Espacio" << "Entrada\n  "
+            << std::string(30, '-') << "\n";
+
+  for (int i = 0; i < p->tVehicles; i++) {
+    char buf[10];
+    std::strftime(buf, sizeof(buf), "%H:%M:%S", std::localtime(&p->vehicles[i].checkIn));
+    std::cout << "  " << std::left << std::setw(10) << p->vehicles[i].plate
+              << "[" << p->vehicles[i].row << "][" << p->vehicles[i].col << "]    "
+              << buf << "\n";
+  }
+  std::cout << "\n";
+}
+
+void menu(Parking* p) {
+  int op = 0;
+  while (op != 5) {
+    #ifdef _WIN32
+    system("cls");
+    #else
+    system("clear");
+    #endif
+
+    showMap(p->map, p->aval);
+    showAval(p);
+
+    std::cout << "  1. Registrar ingreso\n"
+              << "  2. Registrar salida\n"
+              << "  3. Listar vehiculos\n"
+              << "  4. Ver disponibilidad\n"
+              << "  5. Salir\n"
+              << "\n  Opcion: ";
+
+    // Leemos como string para que si el usuario escribe letras el programa no explote
+    std::string inp;
+    std::cin >> inp;
+    try { op = std::stoi(inp); } catch (...) { op = -1; }
+
+    switch (op) {
+      case 1: checkInVeh(p);   break;
+      case 2: checkOutVeh(p);  break;
+      case 3: showVehicles(p); break;
+      case 4: showAval(p);     break;
+      case 5: std::cout << "\n  Hasta luego.\n\n"; break;
+      default: std::cout << "\n  Opcion invalida.\n";
+    }
+
+    if (op != 5) {
+      std::cout << "\n  Enter para continuar...";
+      std::cin.ignore();
+      std::cin.get();
+    }
+  }
+}
